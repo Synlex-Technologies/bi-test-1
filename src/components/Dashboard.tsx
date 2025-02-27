@@ -1,5 +1,5 @@
 'use client';
-
+import { useEffect } from 'react';
 import React, { useState } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -16,15 +16,63 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
   const [fileName, setFileName] = useState('');
 
-  const handleFileUpload = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+  // const handleFileUpload = (event) => {
+  //   const file = event.target.files[0];
+  //   if (!file) return;
 
+  //   setLoading(true);
+  //   setError(null);
+  //   setFileName(file.name);
+
+  //   const reader = new FileReader();
+  //   reader.onload = (e) => {
+  //     try {
+  //       const data = new Uint8Array(e.target.result);
+  //       const workbook = XLSX.read(data, {
+  //         cellStyles: true,
+  //         cellFormulas: true,
+  //         cellDates: true,
+  //         cellNF: true,
+  //         sheetStubs: true
+  //       });
+
+  //       const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  //       const jsonData = XLSX.utils.sheet_to_json(sheet, {raw: false, dateNF: 'yyyy-mm-dd'});
+        
+  //       // Process data
+  //       const processedData = processLedgerData(jsonData);
+  //       setDashboardData(processedData);
+  //     } catch (error) {
+  //       console.error('Error processing Excel file:', error);
+  //       setError('Failed to process the Excel file. Please make sure it has the expected format with columns like Party Name, Amount, Actual Qty, etc.');
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   reader.onerror = () => {
+  //     setError('Failed to read the file. Please try again.');
+  //     setLoading(false);
+  //   };
+
+  //   reader.readAsArrayBuffer(file);
+  // };
+
+
+
+const handleFileUpload = async () => {
+  try {
     setLoading(true);
     setError(null);
-    setFileName(file.name);
 
+    const response = await fetch("/excelsheet/Merged_Invoice_Ledger_Stock.xlsx"); // Adjust path if needed
+    if (!response.ok) {
+      throw new Error("Failed to fetch the file.");
+    }
+
+    const blob = await response.blob();
     const reader = new FileReader();
+
     reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target.result);
@@ -33,30 +81,41 @@ const Dashboard = () => {
           cellFormulas: true,
           cellDates: true,
           cellNF: true,
-          sheetStubs: true
+          sheetStubs: true,
         });
 
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(sheet, {raw: false, dateNF: 'yyyy-mm-dd'});
-        
+        const jsonData = XLSX.utils.sheet_to_json(sheet, {
+          raw: false,
+          dateNF: "yyyy-mm-dd",
+        });
+
         // Process data
         const processedData = processLedgerData(jsonData);
         setDashboardData(processedData);
       } catch (error) {
-        console.error('Error processing Excel file:', error);
-        setError('Failed to process the Excel file. Please make sure it has the expected format with columns like Party Name, Amount, Actual Qty, etc.');
+        console.error("Error processing Excel file:", error);
+        setError(
+          "Failed to process the Excel file. Please make sure it has the expected format."
+        );
       } finally {
         setLoading(false);
       }
     };
 
-    reader.onerror = () => {
-      setError('Failed to read the file. Please try again.');
-      setLoading(false);
-    };
+    reader.readAsArrayBuffer(blob);
+  } catch (error) {
+    console.error(error);
+    setError("Failed to load the default file.");
+    setLoading(false);
+  }
+};
 
-    reader.readAsArrayBuffer(file);
-  };
+// Call this function when the component mounts
+useEffect(() => {
+  handleFileUpload();
+}, []);
+
 
   // Function to process ledger data
   const processLedgerData = (jsonData) => {
@@ -240,46 +299,6 @@ const Dashboard = () => {
     <div className="p-4 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-bold mb-6 text-gray-800">Invoice Ledger Dashboard</h1>
       
-      {/* File Upload Section */}
-      <div className="bg-white p-6 rounded shadow mb-6">
-        <h2 className="text-lg font-semibold mb-4">Upload Your Excel File</h2>
-        <p className="mb-4 text-gray-600">Upload your invoice ledger Excel file to generate the dashboard visualizations.</p>
-        
-        <div className="flex flex-col sm:flex-row items-center gap-4">
-          <label className="flex flex-col items-center px-4 py-2 bg-blue-600 text-white rounded-lg shadow-lg tracking-wide cursor-pointer hover:bg-blue-700">
-            <svg className="w-6 h-6" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-              <path d="M16.88 9.1A4 4 0 0 1 16 17H5a5 5 0 0 1-1-9.9V7a3 3 0 0 1 4.52-2.59A4.98 4.98 0 0 1 17 8c0 .38-.04.74-.12 1.1zM11 11h3l-4-4-4 4h3v3h2v-3z" />
-            </svg>
-            <span className="mt-2">Select Excel File</span>
-            <input 
-              type="file" 
-              className="hidden" 
-              accept=".xlsx,.xls" 
-              onChange={handleFileUpload}
-              disabled={loading}
-            />
-          </label>
-          
-          {fileName && (
-            <span className="text-gray-700">
-              File: <span className="font-medium">{fileName}</span>
-            </span>
-          )}
-        </div>
-        
-        {loading && (
-          <div className="mt-4 text-blue-600">
-            Processing your file... This may take a moment.
-          </div>
-        )}
-        
-        {error && (
-          <div className="mt-4 text-red-600">
-            {error}
-          </div>
-        )}
-      </div>
-
       {/* Dashboard Content */}
       {dashboardData ? (
         <>
