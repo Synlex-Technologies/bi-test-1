@@ -132,7 +132,7 @@ const Dashboard = () => {
       setError("");
 
       const response = await fetch(
-        "/excelsheet/Merged_Invoice_Ledger_Stock.xlsx"
+        "./excelsheet/Merged_Invoice_Ledger_Stock.xlsx"
       ); // Adjust path if needed
       if (!response.ok) {
         throw new Error("Failed to fetch the file.");
